@@ -51,7 +51,7 @@ function     [k,Vbm,Vcp,Pdbar,alpha,Pd]= wkb_3D_box(params)
   Pdbar=wkb_fac.*Pth.*sqrt((S(1).*k(1))./(S.*k)).*exp(int); %average pressure
   Pd=Pdbar.*alpha; %pressure across partition
   Vcp=Pd.*Ycp; %Partition's velocity
-  Vbm=Pd.*Ybm./Wbm; %BM velocity 
+  Vbm=Pd.*Ybm; %BM velocity 
 
  
  

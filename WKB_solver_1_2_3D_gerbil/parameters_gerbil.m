@@ -40,6 +40,6 @@ param.S=S;
 
 param.mass=mass;
 param.stiffness=stiffness;
-damp_factor=0.2;
+damp_factor=0.21;
 param.damp_factor=damp_factor;
 param.damping=2*damp_factor*stiffness./(2*pi*cf); %damping coefficient (not factor)
