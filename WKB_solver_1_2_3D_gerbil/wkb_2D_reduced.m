@@ -21,11 +21,13 @@ function     [k,Vbm,Vcp,Pdbar,alpha,Pd]= wkb_2D_reduced(params)
   klw=csqrt(k2lw);
 
   alpha=klw*0+1; %start from alpha=1 everywhere
-    for n=1:30 %usual iteration for computing alpha [see Altoè & Shera (2020) Sci. Rep.]
+    for n=1:10 %usual iteration for computing alpha [see Altoè & Shera (2020) Sci. Rep.]
     k= csqrt(alpha.*k2lw);
     k = abs(real(k)) + 1i*abs(imag(k)).*sign(imag(klw));
     alpha = (k.*H)./tanh((k.*H));
     end
+    k= csqrt(alpha.*k2lw);
+    k = abs(real(k)) + 1i*abs(imag(k)).*sign(imag(klw));
   int=cumtrapz(-1i*k*dx);
   Pdbar=wkb_fac.*Pth.*sqrt((S(1).*k(1))./(S.*k)).*exp(int); %average pressure
   Pd=Pdbar.*alpha; %pressure across partition

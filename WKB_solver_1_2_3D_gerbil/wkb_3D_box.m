@@ -46,6 +46,8 @@ function     [k,Vbm,Vcp,Pdbar,alpha,Pd]= wkb_3D_box(params)
         alpha=alpha+av0.*cn./(m.*tanh(m.*H)).*sin(pi*i*e/2).*cos(pi*i*dw)./(pi.*i*e/2);
     end
     end
+    k= csqrt(alpha.*k2lw);
+    k = abs(real(k)) + 1i*abs(imag(k)).*sign(imag(klw));
   
   int=cumsum(-1i*k*dx);
   Pdbar=wkb_fac.*Pth.*sqrt((S(1).*k(1))./(S.*k)).*exp(int); %average pressure

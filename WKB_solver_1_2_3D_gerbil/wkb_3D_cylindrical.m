@@ -22,7 +22,7 @@ function     [k,Vbm,Vcp,Pdbar,alpha,Pd]= wkb_3D_cylindrical(params)
 
   area=pi*r2.^2-pi*r1.^2;
   alpha=klw*0+1; %start from alpha=1 everywhere
-    for n=1:30 %usual iteration for computing alpha [see Altoè & Shera (2020) Sci. Rep.]
+    for n=1:10 %usual iteration for computing alpha [see Altoè & Shera (2020) Sci. Rep.]
     k= csqrt(alpha.*k2lw);
         k = abs(real(k)) + 1i*abs(imag(k)).*sign(imag(klw));
     pD0=besselk(0,k.*r1)+besselk(1,r2.*k)./besseli(1,r2.*k).*besseli(0,k.*r1);
@@ -30,6 +30,8 @@ function     [k,Vbm,Vcp,Pdbar,alpha,Pd]= wkb_3D_cylindrical(params)
         besselk(1,r2.*k)./besseli(1,r2.*k).*(-r1.*besseli(1,k.*r1)+r2.*besseli(1,k.*r2)))./k./area;
     alpha=pD0./pDbar;
     end
+    k= csqrt(alpha.*k2lw);
+    k = abs(real(k)) + 1i*abs(imag(k)).*sign(imag(klw));
    
   int=cumsum(-1i*k*dx);
   Pdbar=wkb_fac.*Pth.*sqrt((S(1).*k(1))./(S.*k)).*exp(int); %average pressure
