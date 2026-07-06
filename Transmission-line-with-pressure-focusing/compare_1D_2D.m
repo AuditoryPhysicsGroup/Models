@@ -5,7 +5,7 @@ clc;
 
 figure(77); 
 
-fs=400e3;
+fs=100e3;
 
 dx=0.02;
 f0=16e3;
@@ -15,12 +15,10 @@ for tau=[0 0.55] % we start with a passive model and then repeat calculation for
 [model1D,model2D]=gerbil_state_space(dx,tau);
 param=gerbil_box_model(dx);
 
-t=0:1/fs:0.005; % 5 ms sound
-tt=0.25e-3;
+t=0:1/fs:0.05; % 50 ms sound
+tt=0.25e-3;%-3;
 stim=ramp(sin(2*pi*f0*t),tt*fs);
-% stim(1:4)=1;
 
-tic;
 model=model2D;
 model.t=t;
 model.stim=set_model_stim(stim.');%%
@@ -28,7 +26,7 @@ model.fs=fs;
 tic;
 % compute the time domain solution
 options = odeset('RelTol',1e-3,'AbsTol',1e-9);
-[~,yy]=ode45(@(t,y) state_space_solver(t,y,model),t,(model.ystart),options);
+[~,yy]=ode45(@(t,y) state_space_solver_fast2D(t,y,model),t,(model.ystart),options);
 toc;
 vbm=yy(:,3:4:end-1); %extract the solution of vbm and vint 
 vint=yy(:,5:4:end-1);
@@ -45,8 +43,8 @@ model.t=t;
 model.stim=set_model_stim(stim.');%%
 model.fs=fs;
 tic;
-options = odeset('RelTol',1e-3,'AbsTol',1e-9);
-[~,yy]=ode45(@(t,y) state_space_solver(t,y,model),t,(model.ystart),options);
+% options = odeset('RelTol',1e-3,'AbsTol',1e-9);
+[~,yy]=ode45(@(t,y) state_space_solver_fast1D(t,y,model),t,(model.ystart),options);
 toc;
 vbm=yy(:,3:4:end-1);
 vint=yy(:,5:4:end-1);

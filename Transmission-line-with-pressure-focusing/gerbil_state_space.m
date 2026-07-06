@@ -95,12 +95,18 @@ Fe(1,2)=1./dx;
 model1D.q=sparse(param.Nx+2,1);
 Fmin1=inv(Fe);
 Common=inv(speye(numel(y))-Be*Fmin1*Ce);
-model1D.A=Common*Ae;
-model1D.B=Common*Be;
+
+model1D.A=(Common*Ae);
+model1D.B=(Common*Be);
+model1D.Ae=Ae;
+model1D.Be=Be;
+model1D.Ce=Ce;
+model1D.Fcb=Fe-Ce*Be;
+model1D.FcbFast=decomposition(model1D.Fcb,'lu'); 
+%in our system matlab solver is now faster solving Fy=x, with tridiagonal
+%solver than LU decomposition
 model1D.dx=dx;
 model1D.Nx=param.Nx;
-model1D.Fmin1=Fmin1;
-model1D.BF=model1D.B*Fmin1;
 model1D.ystart=y;
 model1D.pstart=p;
 model1D.cf=param.fr;
@@ -114,9 +120,9 @@ model2D=model1D;
 skip_h=8; 
 H=param.H;
 
-% define matrixes A1 and B1 such that A1*p0=B1*pbar;
+% define matrixes D and E such that E*p0=D*pbar;
 % A1 and B1 
-B1=speye(param.Nx+2,param.Nx+2);
+D1=speye(param.Nx+2,param.Nx+2);
 
 Nx=param.Nx;
 Nx=param.Nx;
@@ -124,36 +130,70 @@ hx2=H.^2./dx^2*4/9;
 hx2(1:skip_h)=0; hx2(end-skip_h:end)=0;
 hx2=[0 hx2 0].';
 
-B22=spdiags([-circshift(hx2,-1) 2*hx2 -circshift(hx2,1)],-1:1,Nx+2,Nx+2); %2nd spatial derivative
+D22=spdiags([-circshift(hx2,-1) 2*hx2 -circshift(hx2,1)],-1:1,Nx+2,Nx+2); %2nd spatial derivative
 hx4=H.^4./dx^4*1/63;
 hx4(1:skip_h)=0; hx4(end-skip_h:end)=0;
 hx4=[0 hx4 0].';
-B44=spdiags([circshift(hx4,-2) -4*circshift(hx4,-1) ...
+D44=spdiags([circshift(hx4,-2) -4*circshift(hx4,-1) ...
     6*hx4 -4*circshift(hx4,1) circshift(hx4,2)],-2:2,Nx+2,Nx+2); %4ht spatial derivative
 
-B1=B1+B22+B44; % sum them all
+D=D1+D22+D44; % sum them all
 
-A1=speye(Nx+2,Nx+2);
+E1=speye(Nx+2,Nx+2);
 hx2=H.^2./dx^2*1/9; 
 hx2(1:skip_h)=0; hx2(end-skip_h:end)=0;
 hx2=[0 hx2 0].';
-A22=spdiags([-circshift(hx2,-1) 2*hx2 -circshift(hx2,1)],-1:1,Nx+2,Nx+2);
+E22=spdiags([-circshift(hx2,-1) 2*hx2 -circshift(hx2,1)],-1:1,Nx+2,Nx+2);
 hx4=H.^4./dx^4*1/945;
-% hx4(1)=0; hx4(end)=0;
 hx4(1:skip_h)=0; hx4(end-skip_h:end)=0;
 
 hx4=[0 hx4 0].';
-A44=spdiags([circshift(hx4,-2) -4*circshift(hx4,-1) ...
+E44=spdiags([circshift(hx4,-2) -4*circshift(hx4,-1) ...
     6*hx4 -4*circshift(hx4,1) circshift(hx4,2)],-2:2,Nx+2,Nx+2);
-A1=A1+A22+A44;
-%Be'=Be*S with S matrix representation of the "pressure focusing" spatial filter 
+E=E1+E22+E44;
+%Be2d=Be1*E^(-1)*D with S matrix representation of the "pressure focusing" spatial filter 
 % that relates driving and average pressure, S=A1^(-1)B1. See paper
-Be2d=Be*(A1\B1);
+Be2d=Be*(E\D);
 
 Common=inv(speye(numel(y))-Be2d*Fmin1*Ce);
 model2D.A=Common*Ae;
 model2D.B=Common*Be2d;
 model2D.dx=dx;
 model2D.Nx=param.Nx;
-model2D.Fmin1=Fmin1;
-model2D.BF=model2D.B*Fmin1;
+
+N=numel(Fe(1,:)); 
+model2D.N=N;
+
+model2D.Ae=Ae;
+model2D.Be=Be2d;
+model2D.Ce=Ce;
+
+model2D.E=E;
+model2D.D=D;
+model2D.Be1d=Be;
+
+model2D.Ee=decomposition(model2D.E,'lu'); % save some time using lu decomposition
+LargeMatrix=([Fe -Ce*Be; -D E]);
+% this is to solve (Fe-CBE^(-1)D)^(-1)y=x avoiding matrix inversion 
+% the solution is to solve Fy-CBu=x -Ey+Du=0
+% numerically we solve LargeMatrix * y2=[x 0]^T
+% and then discard half of the solution
+p=reshape([1:N; N+1:2*N], 1, []);
+LargeReshaped=LargeMatrix(p,p);
+% we reshape the matrix so it is banded
+model2D.p=p;
+model2D.bigD=sparse(N,2*N);
+model2D.bigD(:,1:2:end)=model2D.D;
+% this big D is like D but takes only the part of the solution we need.
+[model2D.L,model2D.U,model2D.P] = lu(LargeReshaped);
+% use LU decomposition to speed up matters
+% would be great to have a low-level solver for this banded matrix
+[~, pLU] = max(model2D.P, [], 2);
+pp2=p(pLU);
+model2D.pp2=pp2;
+
+
+
+
+
+
